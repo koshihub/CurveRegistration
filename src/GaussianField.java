@@ -25,8 +25,8 @@ public class GaussianField {
 			for(int y=0; y<height; y++) {
 				double val = 0d;
 				for(ExtrapolatedCurve c : curves) {
-					Point proj = c.getProjectionPoint(new Point(x, y));
-					double sd = 1d - Math.min(1d, Math.sqrt((c.terminal.x-x)*(c.terminal.x-x) + (c.terminal.y-y)*(c.terminal.y-y)) / c.extrapolatedCurveLength);
+					Point proj = c.arc.getProjectionPoint(new Point(x, y));
+					double sd = 1d - Math.min(1d, Math.sqrt((c.terminal.x-x)*(c.terminal.x-x) + (c.terminal.y-y)*(c.terminal.y-y)) / c.arc.length);
 					if( proj != null ) {
 						double pe = -(double)((proj.x-x)*(proj.x-x) + (proj.y-y)*(proj.y-y)) / (double)(SIGMA*SIGMA);
 						double pt = -(double)((c.terminal.x-x)*(c.terminal.x-x) + (c.terminal.y-y)*(c.terminal.y-y)) / (double)(SIGMA*SIGMA);
