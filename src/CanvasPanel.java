@@ -10,16 +10,19 @@ class CanvasPanel extends Panel {
 	private static final long serialVersionUID = 1L;
 	
 	int width, height;
-	ArrayList<ExtrapolatedCurve> curves;
 	ArrayList<HermiteCurve> connects;
 	int[][] bitmap;
 	BufferedImage buf;
+	ArrayList<ExtrapolatedCurve> curves;
+
+	GaussianField gaussianField;
 	
 	CanvasPanel(int w, int h) {
 		width = w;
 		height = h;
 		curves = new ArrayList<ExtrapolatedCurve>();
 		connects = new ArrayList<HermiteCurve>();
+		gaussianField = new GaussianField(w, h);
 		
 		// initialize bitmap
 		bitmap = new int[width][height];
@@ -43,17 +46,18 @@ class CanvasPanel extends Panel {
 
 	public void paint(Graphics bg) {
 		if( buf == null ) {
-			buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			buf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 			clearBuffer();
 			repaint();
 		} else {
+			gaussianField.draw(buf);
 			bg.drawImage(buf, 0, 0, this);
 			
-			for(Curve c : curves) {
+			for(ExtrapolatedCurve c : curves) {
 				c.draw(bg);
 			}
-			for(Curve c : connects) {
-				c.draw(bg);
+			for(HermiteCurve c : connects) {
+				//c.draw(bg);
 			}
 		}
 	}
@@ -91,6 +95,9 @@ class CanvasPanel extends Panel {
 		
 		// add to list
 		curves.add(ec);
+		
+		// calculate field
+		gaussianField.calculateField(curves);
 	}
 	
 	//

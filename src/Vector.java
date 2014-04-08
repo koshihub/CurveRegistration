@@ -20,6 +20,12 @@ public class Vector {
 		return Math.sqrt(x*x + y*y);
 	}
 	
+	public double angle() {
+		double a = Math.atan2(y, x) * 180d / Math.PI;
+		if( a < 0d ) a += 360d;
+		return a;
+	}
+	
 	public Vector normal() {
 		return new Vector(y/norm(), -x/norm());
 	}

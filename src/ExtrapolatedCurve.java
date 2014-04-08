@@ -5,31 +5,49 @@ import java.util.ArrayList;
 
 
 public class ExtrapolatedCurve extends Curve {
+	ArrayList<Point> localSeedPoints;
+	ArrayList<Point> globalSeedPoints;
 	ArrayList<Point> seedPoints;
+	
 	Point terminal;
 	Vector terminalVector;
 	double terminalSlope;
+	double extrapolatedCurveLength;
+	boolean clockwise;
 	
 	double curvatureR;
 	Vector center;
 	
 	public ExtrapolatedCurve(ArrayList<Point> points) {
 		super(points);
-		
-		seedPoints = new ArrayList<Point>();
+
+		localSeedPoints = new ArrayList<Point>();
+		globalSeedPoints = new ArrayList<Point>();
 		center = new Vector();
 		
-		int step = 20;
+		// initialize local and global seed points
+		int step = 10;
 		for(int i=pixels.size()-1; i>=0; i-=step) {
-			seedPoints.add(pixels.get(i));
+			localSeedPoints.add(pixels.get(i));
 		}
+		step = 20;
+		for(int i=pixels.size()-1; i>=0; i-=step) {
+			globalSeedPoints.add(pixels.get(i));
+		}
+		
+		// set seed points
+		seedPoints = localSeedPoints;
+		
+		// calculate extrapolate curve
+		extrapolateCurve();
 		
 		// terminal information
 		terminal = seedPoints.get(0);
-		terminalVector = new Vector(terminal.x - seedPoints.get(1).x, terminal.y - seedPoints.get(1).y).normalize();
+		terminalVector = new Vector(
+				terminal.x - seedPoints.get(1).x, 
+				terminal.y - seedPoints.get(1).y).normalize();
+		System.out.println(terminalVector.x);
 		terminalSlope = terminalVector.y / terminalVector.x;
-		
-		extrapolateCurve();
 	}
 	
 	private void extrapolateCurve() {
@@ -40,21 +58,87 @@ public class ExtrapolatedCurve extends Curve {
 		double n = seedPoints.size();
 		
 		curvatureR = (n*Math.pow(v01.norm(), 2d)) / ((n-1)*(v12.innerProduct(v01n)));
-		center.x = p0.x + v01n.x*curvatureR;
-		center.y = p0.y + v01n.y*curvatureR;
-		curvatureR = Math.abs(curvatureR);
-	}
-	
-	public void draw(Graphics g) {
-		super.draw(g);
-		
-		g.setColor(Color.red);
-		for(Point p : seedPoints) {
-			g.drawOval(p.x-1, p.y-1, 3, 3);
+
+		if( curvatureR >= 10000d ) {
+			curvatureR = 10000d;
+		} else if( curvatureR <= -10000d ) {
+			curvatureR = -10000d;
 		}
 		
+		center.x = p0.x + v01n.x*curvatureR;
+		center.y = p0.y + v01n.y*curvatureR;
+		
+		if( curvatureR < 0d ) {
+			clockwise = false;
+			curvatureR = -curvatureR;
+		} else {
+			clockwise = true;
+		}
+		
+		extrapolatedCurveLength = 0.5d * Math.PI * curvatureR;
+	}
+
+	// returns a projection to extrapolated arc
+	public Point getProjectionPoint(Point origin) {
+		int cx = (int)Math.round(center.x), cy = (int)Math.round(center.y);
+		if( cx == origin.x && cy == origin.y ) {
+			return null;
+		}
+		else {
+			Vector tc = new Vector(terminal.x-cx, terminal.y-cy);
+			double start, end;
+			if(clockwise) {
+				start = tc.angle();
+				end = tc.angle() + 90d;
+			} else {
+				start = tc.angle() - 90d;
+				end = tc.angle();
+			}
+			
+			Vector dir;
+			for(int i=0; i<2; i++) {
+				if(i == 0) dir = new Vector(origin.x-cx, origin.y-cy).normalize().scalar(curvatureR);
+				else dir = new Vector(origin.x-cx, origin.y-cy).normalize().scalar(curvatureR).reverse();
+				
+				double dirang = dir.angle();
+				
+				if( (start <= dirang && end >= dirang) ||
+					(start+360d <= dirang && end+360d >= dirang) ||
+					(start-360d <= dirang && end-360d >= dirang) )
+				{
+					return new Point(cx+(int)Math.round(dir.x), cy+(int)Math.round(dir.y));
+				}
+			}
+		}
+		return null;
+	}
+
+	public void draw(Graphics g) {
+		g.setColor(Color.red);
+		for(int i=0; i<3; i++) {
+			Point p = seedPoints.get(i);
+			//g.drawOval(p.x-2, p.y-2, 4, 4);
+		}
+		/*
 		g.setColor(Color.blue);
 		g.drawOval((int)(center.x-curvatureR), (int)(center.y-curvatureR), (int)(curvatureR*2), (int)(curvatureR*2));
+		 */
+		
+		Vector tc = new Vector(terminal.x-center.x, terminal.y-center.y);
+		double start, end;
+		if(clockwise) {
+			start = tc.angle();
+			end = tc.angle() + 90d;
+		} else {
+			start = tc.angle() - 90d;
+			end = tc.angle();
+		}
+		g.setColor(Color.blue);
+		g.drawArc((int)(center.x-curvatureR), (int)(center.y-curvatureR), (int)(curvatureR*2), (int)(curvatureR*2), -(int)start, -(int)(end-start));
+
+		//g.setColor(Color.red);
+		//g.drawLine(terminal.x, terminal.y, terminal.x+(int)(terminalVector.x*60), terminal.y+(int)(terminalVector.y*60));
+		super.draw(g);
 	}
 
 }

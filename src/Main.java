@@ -6,7 +6,7 @@ import javax.swing.*;
 
 class Main {
 	static CanvasPanel canvasPanel;
-	final static int width = 600, height = 600;
+	final static int width = 500, height = 500;
 
 	public static void main(String args[]) {
 		JFrame frame = new JFrame("Curve Registration");
